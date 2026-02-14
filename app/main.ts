@@ -45,6 +45,27 @@ async function main() {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "Write",
+            description: "Write content to a file",
+            parameters: {
+              type: "object",
+              properties: {
+                file_path: {
+                  type: "string",
+                  description: "The path of the file to write to",
+                },
+                content: {
+                  type: "string",
+                  description: "The content to write to the file",
+                },
+              },
+              required: ["file_path", "content"],
+            },
+          },
+        },
       ],
     });
 
@@ -68,6 +89,23 @@ async function main() {
               tool_call_id: toolCall.id,
               content:
                 error instanceof Error ? error.message : "Error reading file",
+            });
+          }
+        } else if (toolCall.function.name === "Write") {
+          const args = JSON.parse(toolCall.function.arguments);
+          try {
+            await fs.writeFile(args.file_path, args.content);
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: "File written successfully",
+            });
+          } catch (error) {
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content:
+                error instanceof Error ? error.message : "Error writing file",
             });
           }
         }
