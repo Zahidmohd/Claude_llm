@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import * as fs from "fs/promises";
+import { exec } from "child_process";
 
 async function main() {
   const [, , flag, prompt] = process.argv;
@@ -65,6 +66,22 @@ async function main() {
               required: ["file_path", "content"],
             },
           },
+        {
+          type: "function",
+          function: {
+            name: "Bash",
+            description: "Execute a shell command",
+            parameters: {
+              type: "object",
+              properties: {
+                command: {
+                  type: "string",
+                  description: "The command to execute",
+                },
+              },
+              required: ["command"],
+            },
+          },
         },
       ],
     });
@@ -106,6 +123,32 @@ async function main() {
               tool_call_id: toolCall.id,
               content:
                 error instanceof Error ? error.message : "Error writing file",
+            });
+          }
+        } else if (toolCall.function.name === "Bash") {
+          const args = JSON.parse(toolCall.function.arguments);
+          try {
+            const output = await new Promise<string>((resolve, reject) => {
+              exec(args.command, (error, stdout, stderr) => {
+                if (error) {
+                  // We resolve even on error to pass the error message back to the LLM
+                  resolve(stderr || error.message);
+                  return;
+                }
+                resolve(stdout || stderr || "Command executed successfully");
+              });
+            });
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: output,
+            });
+          } catch (error) {
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content:
+                error instanceof Error ? error.message : "Error execution command",
             });
           }
         }
