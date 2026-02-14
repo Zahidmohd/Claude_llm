@@ -19,48 +19,63 @@ async function main() {
     baseURL: baseURL,
   });
 
-  const response = await client.chat.completions.create({
-    model: "anthropic/claude-haiku-4.5",
-    messages: [{ role: "user", content: prompt }],
-    tools: [
-      {
-        type: "function",
-        function: {
-          name: "Read",
-          description: "Read and return the contents of a file",
-          parameters: {
-            type: "object",
-            properties: {
-              file_path: {
-                type: "string",
-                description: "The path to the file to read",
+  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+    { role: "user", content: prompt },
+  ];
+
+  while (true) {
+    const response = await client.chat.completions.create({
+      model: "anthropic/claude-haiku-4.5",
+      messages: messages,
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "Read",
+            description: "Read and return the contents of a file",
+            parameters: {
+              type: "object",
+              properties: {
+                file_path: {
+                  type: "string",
+                  description: "The path to the file to read",
+                },
               },
+              required: ["file_path"],
             },
-            required: ["file_path"],
           },
         },
-      },
-    ],
-  });
+      ],
+    });
 
-  if (!response.choices || response.choices.length === 0) {
-    throw new Error("no choices in response");
-  }
+    const message = response.choices[0].message;
+    messages.push(message);
 
-  // You can use print statements as follows for debugging, they'll be visible when running tests.
-  console.error("Logs from your program will appear here!");
-
-  // TODO: Uncomment the lines below to pass the first stage
-  const message = response.choices[0].message;
-  if (message.tool_calls && message.tool_calls.length > 0) {
-    const toolCall = message.tool_calls[0];
-    if (toolCall.function.name === "Read") {
-      const args = JSON.parse(toolCall.function.arguments);
-      const content = await fs.readFile(args.file_path, "utf-8");
-      console.log(content);
+    if (message.tool_calls && message.tool_calls.length > 0) {
+      for (const toolCall of message.tool_calls) {
+        if (toolCall.function.name === "Read") {
+          const args = JSON.parse(toolCall.function.arguments);
+          try {
+            const content = await fs.readFile(args.file_path, "utf-8");
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: content,
+            });
+          } catch (error) {
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content:
+                error instanceof Error ? error.message : "Error reading file",
+            });
+          }
+        }
+      }
+    } else {
+      console.log(message.content);
+      break;
     }
-  } else {
-    console.log(message.content);
   }
 }
 
