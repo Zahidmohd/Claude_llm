@@ -66,6 +66,7 @@ async function main() {
               required: ["file_path", "content"],
             },
           },
+        },
         {
           type: "function",
           function: {
@@ -129,7 +130,7 @@ async function main() {
           const args = JSON.parse(toolCall.function.arguments);
           try {
             const output = await new Promise<string>((resolve, reject) => {
-              exec(args.command, (error, stdout, stderr) => {
+              exec(args.command, (error: any, stdout: any, stderr: any) => {
                 if (error) {
                   // We resolve even on error to pass the error message back to the LLM
                   resolve(stderr || error.message);
