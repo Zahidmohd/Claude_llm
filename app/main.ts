@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import * as fs from "fs/promises";
 
 async function main() {
   const [, , flag, prompt] = process.argv;
@@ -50,7 +51,17 @@ async function main() {
   console.error("Logs from your program will appear here!");
 
   // TODO: Uncomment the lines below to pass the first stage
-  console.log(response.choices[0].message.content);
+  const message = response.choices[0].message;
+  if (message.tool_calls && message.tool_calls.length > 0) {
+    const toolCall = message.tool_calls[0];
+    if (toolCall.function.name === "Read") {
+      const args = JSON.parse(toolCall.function.arguments);
+      const content = await fs.readFile(args.file_path, "utf-8");
+      console.log(content);
+    }
+  } else {
+    console.log(message.content);
+  }
 }
 
 main();
