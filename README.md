@@ -1,34 +1,53 @@
-[![progress-banner](https://backend.codecrafters.io/progress/claude-code/7f9b60a6-100c-4ade-9214-f57da22982b8)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# AI Coding Assistant (Claude Code Clone)
 
-This is a starting point for TypeScript solutions to the
-["Build Your own Claude Code" Challenge](https://codecrafters.io/challenges/claude-code).
+A terminal-based AI coding assistant built in TypeScript that autonomously performs coding tasks. This agent connects to Large Language Models (LLMs) to understand instructions, read codebase context, apply file edits, and execute shell commands iteratively until the task is complete.
 
-Claude Code is an AI coding assistant that uses Large Language Models (LLMs) to
-understand code and perform actions through tool calls. In this challenge,
-you'll build your own Claude Code from scratch by implementing an LLM-powered
-coding assistant.
+## Features
 
-Along the way you'll learn about HTTP RESTful APIs, OpenAI-compatible tool
-calling, agent loop, and how to integrate multiple tools into an AI assistant.
+- **Autonomous Agent Loop**: Maintains conversation context and executes multiple steps to solve complex problems.
+- **File System Operations**: 
+  - **Read**: access file contents to understand the codebase.
+  - **Write**: create and modify files to implement changes.
+- **Shell Integration**: Execute bash commands directly to run tests, manage files, or gather system information.
+- **LLM Integration**: Built to work with OpenAI-compatible APIs (configured for Anthropic models via OpenRouter).
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+## Prerequisites
 
-# Passing the first stage
+- [Bun](https://bun.sh) runtime (v1.2+)
+- An API Key (e.g., from OpenRouter)
 
-The entry point for your `claude-code` implementation is in `app/main.ts`. Study
-and uncomment the relevant code, and submit to pass the first stage:
+## Setup
 
-```sh
-codecrafters submit
+1.  **Clone the repository**
+2.  **Install dependencies**:
+    ```bash
+    bun install
+    ```
+3.  **Configure Environment**:
+    Create a `.env` file in the root directory and add your API credentials:
+    ```env
+    OPENROUTER_API_KEY=your_api_key_here
+    OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+    ```
+
+## Usage
+
+Run the assistant by passing a prompt with the `-p` flag:
+
+```bash
+bun run app/main.ts -p "Read README.md and summarize its contents."
 ```
 
-# Stage 2 & beyond
+Or using the provided shell script:
 
-Note: This section is for stages 2 and beyond.
+```bash
+./your_program.sh -p "Create a new file called hello.ts that prints 'Hello World'"
+```
 
-1. Ensure you have `bun (1.2)` installed locally.
-2. Run `./your_program.sh` to run your program, which is implemented in
-   `app/main.ts`.
-3. Run `codecrafters submit` to submit your solution to CodeCrafters. Test
-   output will be streamed to your terminal.
+## How It Works
+
+The assistant operates in a continuous loop:
+1.  **Think**: Sends the current conversation history and available tools (Read, Write, Bash) to the LLM.
+2.  **Act**: If the LLM requests a tool call, the agent parses the arguments and executes the corresponding function (file I/O or shell command).
+3.  **Observe**:The tool's output is fed back into the conversation history.
+4.  **Repeat**: The process continues until the LLM determines the task is complete or provides a final answer.
